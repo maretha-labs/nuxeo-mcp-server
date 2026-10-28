@@ -1,13 +1,11 @@
 name: Package Docker Image
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   package-docker-image:
+    if: ${{ false }} # Reference only: never publish to the upstream registry from Labs.
     runs-on: ubuntu-latest
     
     steps:

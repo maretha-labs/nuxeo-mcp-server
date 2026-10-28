@@ -1,5 +1,8 @@
 # Nuxeo MCP Server
 
+> Maretha Labs collaboration fork. **[Hyland maintains the canonical project](https://github.com/nuxeo/nuxeo-mcp-server).**
+> Use the `labs` branch here. See [Labs provenance, setup and validation](LABS.md).
+
 ![Build and Unit Tests](https://github.com/nuxeo/nuxeo-mcp-server/actions/workflows/build-and-unit-tests.yml/badge.svg)
 ![Integration Tests](https://github.com/nuxeo/nuxeo-mcp-server/actions/workflows/integration-tests.yml/badge.svg)
 
