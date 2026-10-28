@@ -15,6 +15,16 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 
+def escape_nxql_literal(value: str) -> str:
+    """Escape ``value`` for use inside single quotes in an NXQL statement.
+
+    NXQL escapes with a backslash, not by doubling the quote, so ``Alice's``
+    becomes ``Alice\\'s``. Backslashes go first, or the ones added here would
+    themselves be escaped.
+    """
+    return value.replace("\\", "\\\\").replace("'", "\\'")
+
+
 @dataclass
 class ParsedQuery:
     """Represents a parsed natural language query"""
@@ -232,7 +242,7 @@ class NaturalLanguageParser:
                         {
                             "field": "ecm:fulltext",
                             "operator": "=",
-                            "value": f"'{search_term}'",
+                            "value": f"'{escape_nxql_literal(search_term)}'",
                         }
                     )
 
@@ -270,7 +280,11 @@ class NaturalLanguageParser:
                 username = re.search(pattern, original_query, re.IGNORECASE).group(1)
                 # Don't treat time keywords as usernames
                 if username.lower() not in time_keywords:
-                    return {"field": field, "operator": "=", "value": f"'{username}'"}
+                    return {
+                        "field": field,
+                        "operator": "=",
+                        "value": f"'{escape_nxql_literal(username)}'",
+                    }
 
         # Special handling for 'from' pattern - only if not followed by time keyword
         from_pattern = r'from\s+["\']?(\w+)["\']?'
@@ -281,7 +295,7 @@ class NaturalLanguageParser:
                 return {
                     "field": "dc:creator",
                     "operator": "=",
-                    "value": f"'{username}'",
+                    "value": f"'{escape_nxql_literal(username)}'",
                 }
 
         return None
@@ -302,7 +316,7 @@ class NaturalLanguageParser:
         for pattern, operator in patterns:
             match = re.search(pattern, original_query, re.IGNORECASE)
             if match:
-                title = match.group(1)
+                title = escape_nxql_literal(match.group(1))
                 if operator == "LIKE":
                     if "starts with" in query_lower:
                         value = f"'{title}%'"
@@ -348,7 +362,7 @@ class NaturalLanguageParser:
                     return {
                         "field": "ecm:fulltext",
                         "operator": "=",
-                        "value": f"'{keywords}'",
+                        "value": f"'{escape_nxql_literal(keywords)}'",
                     }
         return None
 
@@ -372,7 +386,7 @@ class NaturalLanguageParser:
                 return {
                     "field": "ecm:path",
                     "operator": "STARTSWITH",
-                    "value": f"'{path}'",
+                    "value": f"'{escape_nxql_literal(path)}'",
                 }
         return None
 

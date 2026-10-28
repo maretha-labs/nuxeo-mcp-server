@@ -393,6 +393,33 @@ class TestNXQLBuilder:
         assert "ORDER BY dc:created DESC" in nxql
 
 
+class TestLiteralEscaping:
+    """User text reaches NXQL string literals escaped, never raw."""
+
+    @pytest.mark.parametrize(
+        "nl_query, expected",
+        [
+            ("find Alice's report", "ecm:fulltext = 'Alice\\'s report'"),
+            ("find C:\\temp notes", "ecm:fulltext = 'C:\\\\temp notes'"),
+            ('documents titled "a\\b"', "dc:title = 'a\\\\b'"),
+            ('documents with title containing "a\\b"', "dc:title LIKE '%a\\\\b%'"),
+            ('documents containing "a\\b"', "ecm:fulltext = 'a\\\\b'"),
+            ('documents in "/a\\b"', "ecm:path STARTSWITH '/a\\\\b'"),
+        ],
+    )
+    def test_condition_values_are_escaped(self, nl_query, expected):
+        nxql = NXQLBuilder(NaturalLanguageParser().parse(nl_query)).build()
+        assert nxql.endswith(f"WHERE {expected}"), nxql
+
+    def test_quote_cannot_close_the_literal(self):
+        nxql = NXQLBuilder(
+            NaturalLanguageParser().parse("find x' OR dc:title = 'y")
+        ).build()
+        assert nxql == (
+            "SELECT * FROM Document WHERE ecm:fulltext = 'x\\' OR dc:title = \\'y'"
+        )
+
+
 class TestEndToEnd:
     """Test end-to-end natural language to NXQL conversion."""
 

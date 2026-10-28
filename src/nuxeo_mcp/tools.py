@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from nuxeo_mcp import query_dsl
 from nuxeo_mcp.annotations import TOOL_ANNOTATIONS
+from nuxeo_mcp.nl_parser import escape_nxql_literal
 from nuxeo_mcp.query_dsl import QueryDslRejected, apply_guardrails
 from nuxeo_mcp.search_models import (
     MODE_NATURAL,
@@ -69,16 +70,6 @@ ToolFunction = Callable[[Dict[str, Any]], Dict[str, Any]]
 # MODE_SEMANTIC stays in the contract but is not advertised until it is
 # implemented: a listed mode invites a call that can only fail.
 _IMPLEMENTED_MODES = (MODE_NATURAL, MODE_NXQL)
-
-
-def _escape_nxql_literal(value: str) -> str:
-    """Escape ``value`` for use inside single quotes in an NXQL statement.
-
-    NXQL escapes with a backslash, not by doubling the quote, so ``Alice's``
-    becomes ``Alice\\'s``. Backslashes go first, or the ones added here would
-    themselves be escaped.
-    """
-    return value.replace("\\", "\\\\").replace("'", "\\'")
 
 
 class DocRef(BaseModel):
@@ -963,7 +954,7 @@ def register_tools(mcp, nuxeo, auth_middleware=None) -> None:
                 # A parse failure must not look like "no documents match", so fall
                 # back to fulltext and say so rather than returning an empty page.
                 logger.warning(f"Natural language parsing failed: {e}; using fulltext")
-                terms = _escape_nxql_literal(
+                terms = escape_nxql_literal(
                     " ".join(
                         w for w in query.split() if w.lower() not in _NL_STOP_WORDS
                     )

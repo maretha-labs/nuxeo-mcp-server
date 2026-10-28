@@ -345,6 +345,20 @@ def test_natural_mode_degrades_with_an_escaped_literal(
     assert result.degraded is not None
 
 
+def test_natural_mode_escapes_literals_when_parsing_succeeds() -> None:
+    """A quote in the query stays inside its literal on the success path too."""
+    nuxeo = _make_nuxeo()
+    result = _search_tool(nuxeo)("find x' OR dc:title = 'y", mode="natural")
+
+    executed = nuxeo.client.query.call_args[0][0]
+    # Unescaped, this parsed as an OR between two conditions.
+    assert executed == (
+        "SELECT * FROM Document WHERE ecm:fulltext = 'x\\' OR dc:title = \\'y'"
+    )
+    assert result.interpretedQuery == executed
+    assert result.degraded is None
+
+
 def test_query_dsl_size_check_covers_the_echoed_query(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
