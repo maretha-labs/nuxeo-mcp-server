@@ -10,6 +10,17 @@ import sys
 # Add the source directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
+# Collected by pytest without real credentials, this script would sign in to
+# a live server with placeholder ones, which now stops the server at startup.
+if "pytest" in sys.modules and not (
+    os.environ.get("NUXEO_TEST_USERNAME") and os.environ.get("NUXEO_TEST_PASSWORD")
+):
+    import pytest
+
+    pytest.skip(
+        "needs NUXEO_TEST_USERNAME and NUXEO_TEST_PASSWORD", allow_module_level=True
+    )
+
 # Import credential helper
 from test_credentials import get_test_credentials
 
