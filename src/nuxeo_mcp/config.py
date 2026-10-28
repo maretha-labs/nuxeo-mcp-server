@@ -151,8 +151,15 @@ class MCPAuthConfig:
         logger.info(f"Configuration saved to {self.config_file_path}")
 
     @classmethod
-    def load(cls, config_path: Optional[Path] = None) -> "MCPAuthConfig":
-        """Load configuration from file and environment."""
+    def load(
+        cls,
+        config_path: Optional[Path] = None,
+        auth_method: Optional[AuthMethod] = None,
+    ) -> "MCPAuthConfig":
+        """Load configuration from file and environment.
+
+        ``auth_method`` overrides NUXEO_AUTH_METHOD for the default server.
+        """
         config = cls()
 
         # Load from file if it exists
@@ -196,24 +203,29 @@ class MCPAuthConfig:
                 logger.warning(f"Failed to load config from {file_path}: {e}")
 
         # Override with environment variables for default server
-        config._load_env_config()
+        config._load_env_config(auth_method)
 
         return config
 
-    def _load_env_config(self) -> None:
-        """Load configuration from environment variables."""
+    def _load_env_config(self, auth_method: Optional[AuthMethod] = None) -> None:
+        """Load configuration from environment variables.
+
+        An explicit ``auth_method`` wins over NUXEO_AUTH_METHOD, so that
+        ``--oauth2`` means OAuth2 even when the variable is unset.
+        """
         nuxeo_url = os.environ.get("NUXEO_URL")
         if not nuxeo_url:
             return
 
-        auth_method_str = os.environ.get("NUXEO_AUTH_METHOD", "basic").lower()
-        try:
-            auth_method = AuthMethod(auth_method_str)
-        except ValueError:
-            logger.warning(
-                f"Invalid auth method: {auth_method_str}, falling back to basic"
-            )
-            auth_method = AuthMethod.BASIC
+        if auth_method is None:
+            auth_method_str = os.environ.get("NUXEO_AUTH_METHOD", "basic").lower()
+            try:
+                auth_method = AuthMethod(auth_method_str)
+            except ValueError:
+                logger.warning(
+                    f"Invalid auth method: {auth_method_str}, falling back to basic"
+                )
+                auth_method = AuthMethod.BASIC
 
         oauth2_config = (
             OAuth2Config.from_env() if auth_method == AuthMethod.OAUTH2 else None
